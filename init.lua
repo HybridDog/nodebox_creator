@@ -20,6 +20,7 @@ minetest.register_entity("nodebox_creator:entity",{
 	end
 })
 
+-- should remove old entities
 local function remove_boxes(pos)
 	for _,obj in pairs(minetest.get_objects_inside_radius(pos, 1)) do
 		if not obj:is_player() then
@@ -28,6 +29,7 @@ local function remove_boxes(pos)
 	end
 end
 
+-- removes a box from tab
 local function take_box(tab, box)
 	local z1, y1, x1, z2, y2, x2 = unpack(box)
 	z1 = math.ceil(z1)
@@ -43,6 +45,7 @@ local function take_box(tab, box)
 	return tab
 end
 
+-- checks if a box is needed to be added
 local function box_visible(tab, x1, y1, z1, x2, y2, z2)
 	for i = z1, z2-1 do
 		for j = y1, y2-1 do
@@ -56,8 +59,9 @@ local function box_visible(tab, x1, y1, z1, x2, y2, z2)
 	return false
 end
 
+-- returns the tables needed for showing nodeboxes with entities
 local function get_fine_boxes(boxes)
-	local tab = {}
+	local tab = {}	-- fills a table of coordinates
 	for _,i in pairs(boxes) do
 		for z = i[3], i[6]-1 do
 			for y = i[2], i[5]-1 do
@@ -67,36 +71,18 @@ local function get_fine_boxes(boxes)
 			end
 		end
 	end
-	local old_tab = {}
+	local old_tab = {}	-- copy this table of coordinates
 	for i,_ in pairs(tab) do
 		old_tab[i] = true
 	end
 	local big_entities,n = {},1
-	for _,box in pairs(boxes) do
+	for _,box in pairs(boxes) do	-- checks if single big entities can be used
 		local y1, y2 = box[2], box[5]
 		local yscale = y2-y1
 		local py = y1+yscale/2
 		local z1, z2, x1, x2 = box[3], box[6], box[1], box[4]
 		local xscale = x2-x1
 		local zscale = z2-z1
-		--[[if zscale < xscale then
-			local xzdif = xscale-zscale
-			local xmin = x1+xzdif
-			local xmax = x2-xzdif
-			tab = take_box(tab, {z1, y1, xmin, z2, y2, xmax})
-			local pz = z1+zscale/2
-			local px = xmin+zscale/2
-			big_entities[n] = {x=px, y=py, z=pz, a=xscale, b=yscale}
-			n = n+1
-		elseif xscale < zscale then
-			local zxdif = zscale-xscale
-			local zmin = z1+zxdif
-			local zmax = z2-zxdif
-			tab = take_box(tab, {zmin, y1, x1, zmax, y2, x2})
-			local pz = zmin+xscale/2
-			local px = x1+xscale/2
-			big_entities[n] = {x=px, y=py, z=pz, a=xscale, b=yscale}
-			n = n+1]]
 		if xscale == zscale then
 			tab = take_box(tab, box)
 			local px = x1+xscale/2
@@ -105,7 +91,7 @@ local function get_fine_boxes(boxes)
 			n = n+1
 		end
 	end
-	for _,box in pairs(boxes) do
+	for _,box in pairs(boxes) do	-- checks if a row big entities can be used
 		local y1, y2 = box[2], box[5]
 		local yscale = y2-y1
 		local py = y1+yscale/2
@@ -140,7 +126,7 @@ local function get_fine_boxes(boxes)
 			end
 		end
 	end
-	for z = -8,8 do
+	for z = -8,8 do	-- checks if small entities can be higher to fill more space
 		for x = -8,8 do
 			local p1, lastp
 			for y = -8,9 do
@@ -171,6 +157,7 @@ local function get_fine_boxes(boxes)
 	return tab, big_entities, old_tab
 end
 
+-- changes nodebox creator text to nodebox tables
 local function get_positions(tab)
 	local tab2,n = {},1
 	for i,b in pairs(tab) do
@@ -184,6 +171,7 @@ local function get_positions(tab)
 	return tab2
 end
 
+-- removes coordinates from tab which aren't needed
 local function clean_tab(tab, old_tab)
 	for z = -7,7 do
 		for y = -7,7 do
@@ -216,6 +204,7 @@ local function clean_tab(tab, old_tab)
 	return tab
 end
 
+-- removes the old enitities and adds new ones at pos
 local function update_boxes(pos, boxes)
 	remove_boxes(pos)
 	local tab, big_boxes, old_tab = get_fine_boxes(boxes)
@@ -278,48 +267,6 @@ minetest.register_node("nodebox_creator:block", {
 		meta:set_string("ps", ps)
 		pos.y = pos.y+1
 		update_boxes(pos, boxes)
-		--[[if pos_from_string(fields.pos_out) then
-			meta:set_string("pos_out", fields.pos_out)
-		end
-		local r = tonumber(fields.r)
-		if type(r) == "number" then
-			meta:set_string("r", math.min(r, 20))
-		end
-		if fields.text
-		and fields.text ~= "" then
-			meta:set_string("text", fields.text)
-		end
-		local pos_in = vector.pos_to_string(pos_from_string(meta:get_string("pos_in")))
-		local pos_out = vector.pos_to_string(pos_from_string(meta:get_string("pos_out")))
-		local info = meta:get_string("text")
-		if info then
-			if info ~= "" then
-				info = " \""..info.."\""
-			end
-		else
-			info = ""
-		end
-		meta:set_string("infotext", "Mport"..
-			info..
-			" from "..pos_in..
-			" to "..pos_out
-		)
-		minetest.log("action", (sender:get_player_name() or "somebody").." did something to Mport at "..vector.pos_to_string(pos))]]
 	end,
---[[	on_rightclick = function(pos, node, clicker, itemstack)
-		meta = minetest.env:get_meta(pos)
-		if meta:get_string("owner") == clicker:get_player_name() then
-			-- set owner
-			ufos.next_owner = meta:get_string("owner")
-			-- restore the fuel inside the node
-			ufos.set_fuel(ufos.ufo,meta:get_int("fuel"))
-			-- add the entity
-			e = minetest.env:add_entity(pos, "ufos:ufo")
-			-- remove the node
-			minetest.env:remove_node(pos)
-			-- reset owner for next ufo
-			ufos.next_owner = ""
-		end
-	end,]]
 })
 
