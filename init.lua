@@ -43,6 +43,19 @@ local function take_box(tab, box)
 	return tab
 end
 
+local function box_visible(tab, x1, y1, z1, x2, y2, z2)
+	for i = z1, z2-1 do
+		for j = y1, y2-1 do
+			for k = x1, x2-1 do
+				if tab[i.." "..j.." "..k] then
+					return true
+				end
+			end
+		end
+	end
+	return false
+end
+
 local function get_fine_boxes(boxes)
 	local tab = {}
 	for _,i in pairs(boxes) do
@@ -84,31 +97,45 @@ local function get_fine_boxes(boxes)
 			local px = x1+xscale/2
 			big_entities[n] = {x=px, y=py, z=pz, a=xscale, b=yscale}
 			n = n+1]]
-		local minscale = math.min(xscale, zscale)
 		if xscale == zscale then
 			tab = take_box(tab, box)
 			local px = x1+xscale/2
 			local pz = z1+xscale/2
 			big_entities[n] = {x=px, y=py, z=pz, a=xscale, b=yscale}
 			n = n+1
-		elseif minscale > 1 then
+		end
+	end
+	for _,box in pairs(boxes) do
+		local y1, y2 = box[2], box[5]
+		local yscale = y2-y1
+		local py = y1+yscale/2
+		local z1, z2, x1, x2 = box[3], box[6], box[1], box[4]
+		local xscale = x2-x1
+		local zscale = z2-z1
+		local minscale = math.min(xscale, zscale)
+		if xscale ~= zscale
+		and minscale > 1 then
 			if minscale == zscale then
 				local pz = z1+minscale/2
 				for x = x1, x2-minscale, minscale do
-					local cbox = {z1, y1, x, z2, y2, x+minscale}
-					tab = take_box(tab, cbox)
-					local px = x+minscale/2
-					big_entities[n] = {x=px, y=py, z=pz, a=minscale, b=minscale}
-					n = n+1
+					if box_visible(tab, x, y1, z1, x+minscale, y2, z2) then
+						local cbox = {z1, y1, x, z2, y2, x+minscale}
+						tab = take_box(tab, cbox)
+						local px = x+minscale/2
+						big_entities[n] = {x=px, y=py, z=pz, a=minscale, b=minscale}
+						n = n+1
+					end
 				end
 			else
 				local px = x1+minscale/2
 				for z = z1, z2-minscale, minscale do
-					local cbox = {z, y1, x1, z+minscale, y2, x2}
-					tab = take_box(tab, cbox)
-					local pz = z+minscale/2
-					big_entities[n] = {x=px, y=py, z=pz, a=minscale, b=minscale}
-					n = n+1
+					if box_visible(tab, x1, y1, z, x2, y2, z+minscale) then
+						local cbox = {z, y1, x1, z+minscale, y2, x2}
+						tab = take_box(tab, cbox)
+						local pz = z+minscale/2
+						big_entities[n] = {x=px, y=py, z=pz, a=minscale, b=minscale}
+						n = n+1
+					end
 				end
 			end
 		end
