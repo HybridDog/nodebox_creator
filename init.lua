@@ -63,7 +63,7 @@ local function get_fine_boxes(boxes)
 		local y1, y2 = box[2], box[5]
 		local yscale = y2-y1
 		local py = y1+yscale/2
-		local z1, z2, x1, x2 = box[1], box[4], box[3], box[6]
+		local z1, z2, x1, x2 = box[3], box[6], box[1], box[4]
 		local xscale = x2-x1
 		local zscale = z2-z1
 		--[[if zscale < xscale then
@@ -84,12 +84,33 @@ local function get_fine_boxes(boxes)
 			local px = x1+xscale/2
 			big_entities[n] = {x=px, y=py, z=pz, a=xscale, b=yscale}
 			n = n+1]]
+		local minscale = math.min(xscale, zscale)
 		if xscale == zscale then
 			tab = take_box(tab, box)
 			local px = x1+xscale/2
 			local pz = z1+xscale/2
 			big_entities[n] = {x=px, y=py, z=pz, a=xscale, b=yscale}
 			n = n+1
+		elseif minscale > 1 then
+			if minscale == zscale then
+				local pz = z1+minscale/2
+				for x = x1, x2-minscale, minscale do
+					local cbox = {z1, y1, x, z2, y2, x+minscale}
+					tab = take_box(tab, cbox)
+					local px = x+minscale/2
+					big_entities[n] = {x=px, y=py, z=pz, a=minscale, b=minscale}
+					n = n+1
+				end
+			else
+				local px = x1+minscale/2
+				for z = z1, z2-minscale, minscale do
+					local cbox = {z, y1, x1, z+minscale, y2, x2}
+					tab = take_box(tab, cbox)
+					local pz = z+minscale/2
+					big_entities[n] = {x=px, y=py, z=pz, a=minscale, b=minscale}
+					n = n+1
+				end
+			end
 		end
 	end
 	return tab, big_entities, old_tab
