@@ -122,7 +122,7 @@ local function get_fine_boxes(boxes)
 						local cbox = {z1, y1, x, z2, y2, x+minscale}
 						tab = take_box(tab, cbox)
 						local px = x+minscale/2
-						big_entities[n] = {x=px, y=py, z=pz, a=minscale, b=minscale}
+						big_entities[n] = {x=px, y=py, z=pz, a=minscale, b=yscale}
 						n = n+1
 					end
 				end
@@ -133,8 +133,36 @@ local function get_fine_boxes(boxes)
 						local cbox = {z, y1, x1, z+minscale, y2, x2}
 						tab = take_box(tab, cbox)
 						local pz = z+minscale/2
-						big_entities[n] = {x=px, y=py, z=pz, a=minscale, b=minscale}
+						big_entities[n] = {x=px, y=py, z=pz, a=minscale, b=yscale}
 						n = n+1
+					end
+				end
+			end
+		end
+	end
+	for z = -8,8 do
+		for x = -8,8 do
+			local p1, lastp
+			for y = -8,9 do
+				if tab[z.." "..y.." "..x] then
+					if not p1 then
+						p1 = y
+						lastp = y
+						minetest.chat_send_all("not p1")
+					elseif y == lastp+1
+					and y ~= 8 then
+						lastp = y
+						minetest.chat_send_all("lastp+1")
+					end
+				else
+					if p1
+					and lastp ~= p1 then
+						tab = take_box(tab, {z, p1, x, z+1, y, x+1})
+						local dist = y-p1
+						big_entities[n] = {x=x+0.5, y=p1+dist/2, z=z+0.5, a=1, b=dist}
+						n = n+1
+						minetest.chat_send_all("added")
+						p1 = nil
 					end
 				end
 			end
