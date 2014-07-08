@@ -28,7 +28,22 @@ local function remove_boxes(pos)
 	end
 end
 
-local function get_positions(boxes)
+local function take_box(tab, box)
+	local z1, y1, x1, z2, y2, x2 = unpack(box)
+	z1 = math.ceil(z1)
+	y1 = math.ceil(y1)
+	x1 = math.ceil(x1)
+	for z = z1, z2-1 do
+		for y = y1, y2-1 do
+			for x = x1, x2-1 do
+				tab[z.." "..y.." "..x] = false
+			end
+		end
+	end
+	return tab
+end
+
+local function get_fine_boxes(boxes)
 	local tab = {}
 	for _,i in pairs(boxes) do
 		for z = i[3], i[6]-1 do
@@ -39,6 +54,48 @@ local function get_positions(boxes)
 			end
 		end
 	end
+	local old_tab = {}
+	for i,_ in pairs(tab) do
+		old_tab[i] = true
+	end
+	local big_entities,n = {},1
+	for _,box in pairs(boxes) do
+		local y1, y2 = box[2], box[5]
+		local yscale = y2-y1
+		local py = y1+yscale/2
+		local z1, z2, x1, x2 = box[1], box[4], box[3], box[6]
+		local xscale = x2-x1
+		local zscale = z2-z1
+		--[[if zscale < xscale then
+			local xzdif = xscale-zscale
+			local xmin = x1+xzdif
+			local xmax = x2-xzdif
+			tab = take_box(tab, {z1, y1, xmin, z2, y2, xmax})
+			local pz = z1+zscale/2
+			local px = xmin+zscale/2
+			big_entities[n] = {x=px, y=py, z=pz, a=xscale, b=yscale}
+			n = n+1
+		elseif xscale < zscale then
+			local zxdif = zscale-xscale
+			local zmin = z1+zxdif
+			local zmax = z2-zxdif
+			tab = take_box(tab, {zmin, y1, x1, zmax, y2, x2})
+			local pz = zmin+xscale/2
+			local px = x1+xscale/2
+			big_entities[n] = {x=px, y=py, z=pz, a=xscale, b=yscale}
+			n = n+1]]
+		if xscale == zscale then
+			tab = take_box(tab, box)
+			local px = x1+xscale/2
+			local pz = z1+xscale/2
+			big_entities[n] = {x=px, y=py, z=pz, a=xscale, b=yscale}
+			n = n+1
+		end
+	end
+	return tab, big_entities, old_tab
+end
+
+local function get_positions(tab)
 	local tab2,n = {},1
 	for i,b in pairs(tab) do
 		if b then
@@ -51,11 +108,50 @@ local function get_positions(boxes)
 	return tab2
 end
 
+local function clean_tab(tab, old_tab)
+	for z = -7,7 do
+		for y = -7,7 do
+			for x = -7,7 do
+				local p = z.." "..y.." "..x
+				if tab[p] then
+					local visible
+					for i = -1,1,2 do
+						for _,p in pairs({
+							{z+i, y, x},
+							{z, y+i, x},
+							{z, y, x+i},
+						}) do
+							if not old_tab[p[1].." "..p[2].." "..p[3]] then
+								visible = true
+								break
+							end
+						end
+						if visible then
+							break
+						end
+					end
+					if not visible then
+						tab[p] = nil
+					end
+				end
+			end
+		end
+	end
+	return tab
+end
+
 local function update_boxes(pos, boxes)
 	remove_boxes(pos)
-	local ps = get_positions(boxes)
+	local tab, big_boxes, old_tab = get_fine_boxes(boxes)
+	tab = clean_tab(tab, old_tab)
+	local ps = get_positions(tab)
 	for _,p in pairs(ps) do
 		minetest.add_entity(vector.add(pos, p), "nodebox_creator:entity")
+	end
+	for _,box in pairs(big_boxes) do
+		local xscale, yscale = box.a, box.b
+		local obj = minetest.add_entity(vector.add(pos, vector.divide(box, 16)), "nodebox_creator:entity")
+		obj:set_properties({visual_size={x=xscale/16, y=yscale/16}}) 
 	end
 end
 
