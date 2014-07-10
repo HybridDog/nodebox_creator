@@ -292,9 +292,10 @@ local function get_box_string(ps, pname)
 	return st
 end
 
+local last_punch = tonumber(os.clock())
 minetest.register_node("nodebox_creator:block", {
 	description = "Nodebox Creator",
-	tiles = {"default_mese_block.png"},
+	tiles = {"nodebox_creator.png"},
 	groups = {cracky=3},
 	on_construct = function(pos)
 		local meta = minetest.get_meta(pos)
@@ -305,6 +306,18 @@ minetest.register_node("nodebox_creator:block", {
 		)
 		meta:set_string("infotext", "Nodebox Creator")
 		meta:set_string("ps", "")
+	end,
+	after_destruct = function(pos)
+		pos.y = pos.y+1
+		remove_boxes(pos)
+	end,
+	on_punch = function(pos)	-- removes entities if the node is punched (useful against lag problems)
+		local time = tonumber(os.clock())
+		if time-last_punch > 3 then
+			last_punch = time
+			pos.y = pos.y+1
+			remove_boxes(pos)
+		end
 	end,
 	on_receive_fields = function(pos, formname, fields, sender)
 		local ps = fields.ps
