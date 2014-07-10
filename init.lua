@@ -134,11 +134,9 @@ local function get_fine_boxes(boxes)
 					if not p1 then
 						p1 = y
 						lastp = y
-						minetest.chat_send_all("not p1")
 					elseif y == lastp+1
 					and y ~= 8 then
 						lastp = y
-						minetest.chat_send_all("lastp+1")
 					end
 				else
 					if p1
@@ -147,7 +145,6 @@ local function get_fine_boxes(boxes)
 						local dist = y-p1
 						big_entities[n] = {x=x+0.5, y=p1+dist/2, z=z+0.5, a=1, b=dist}
 						n = n+1
-						minetest.chat_send_all("added")
 						p1 = nil
 					end
 				end
@@ -220,6 +217,81 @@ local function update_boxes(pos, boxes)
 	end
 end
 
+-- returns nodebox boxes from the nodebox_creator box string
+local size_tab = {[0]=0, "1/16", "1/8", "3/16", "1/4", "5/16", "3/8", "7/16", "0.5"}
+local function get_nodebox_string(boxes)
+	local count = #boxes
+	local st = ""
+	for m,box in pairs(boxes) do
+		st = st.."{"
+		for n,i in pairs(box) do
+			i = tonumber(i)
+			if i < 0 then
+				i = "-"..size_tab[-i]
+			else
+				i = size_tab[i]
+			end
+			st = st..i
+			if n ~= 6 then
+				st = st..", "
+			end
+		end
+		st = st.."}"
+		if m ~= count then
+			st = st..",\n"
+		end
+	end
+	return st
+end
+
+-- returns a string for the nodebox_creator from nodebox boxes
+local function get_box_string(ps, pname)
+	ps = string.trim(ps)
+	local st = ""
+	for _,box in ipairs(string.split(ps, "{")) do
+		local coords = string.split(box, ",")
+		for n = 1,6 do
+			local coord = string.trim(coords[n])
+			if not coord then
+				minetest.chat_send_player(pname, "problem at coordinate "..n)
+				return
+			end
+			local ad
+			if n == 6 then
+				coord = string.split(coord, "}")[1]
+				ad = "\n"
+			else
+				ad = " "
+			end
+			if not coord
+			or coord == "" then
+				minetest.chat_send_player(pname, "6 coordinates required, problem at "..n)
+				return
+			end
+			local nums = string.split(coord, "/")
+			if nums[2] then
+				local a = tonumber(nums[1])
+				local b = tonumber(nums[2])
+				if not a
+				or not b then
+					minetest.chat_send_player(pname, "coordinate "..n.." can't be used")
+					return
+				end
+				coord = a/b
+			else
+				coord = tonumber(coord)
+				if not coord then
+					minetest.chat_send_player(pname, "coordinate "..n.." needs to be a number")
+					return
+				end
+			end
+			coord = tonumber(coord)*16
+			st = st..coord..ad
+		end
+	end
+	return st
+end
+
 minetest.register_node("nodebox_creator:block", {
 	description = "Nodebox Creator",
 	tiles = {"default_mese_block.png"},
@@ -228,7 +300,8 @@ minetest.register_node("nodebox_creator:block", {
 		local meta = minetest.get_meta(pos)
 		meta:set_string("formspec", "size[5,8]"..
 			"textarea[0.3,0;5,9;ps;;${ps}]"..
-			"button[1.3,7.1;2,2;s;save]"
+			"button[0.3,7.1;2,2;s;save]"..
+			"button[2.6,7.1;2,2;show;save and show box]"
 		)
 		meta:set_string("infotext", "Nodebox Creator")
 		meta:set_string("ps", "")
@@ -240,6 +313,15 @@ minetest.register_node("nodebox_creator:block", {
 			return
 		end
 		local pname = sender:get_player_name()
+
+		-- converts usual nodeboxes to simple nodebox strings
+		if string.find(ps, "{") then
+			ps = get_box_string(ps, pname)
+			if not ps then
+				return
+			end
+		end
+
 		local boxess = string.split(ps, "\n")
 		local boxes = {}
 		for _,i in pairs(boxess) do
@@ -265,6 +347,18 @@ minetest.register_node("nodebox_creator:block", {
 		end
 		local meta = minetest.get_meta(pos)
 		meta:set_string("ps", ps)
+
+		local nodebox_string = get_nodebox_string(boxes)
+		local f = io.open(minetest.get_worldpath()..'/tmp.txt', "w")
+		f:write(nodebox_string)
+		io.close(f)
+		if fields.show then
+			minetest.show_formspec(pname, "nodebox", "size[5,6]"..
+				"label[1,0;ctrl a\nctrl c]"..
+				"label[2.5,0.1;<worldpath>/tmp.txt]"..
+				"textarea[0.3,1;5,6;ps;;"..nodebox_string.."]")
+		end
+
 		pos.y = pos.y+1
 		update_boxes(pos, boxes)
 	end,
