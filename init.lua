@@ -295,8 +295,29 @@ end
 local last_punch = tonumber(os.clock())
 minetest.register_node("nodebox_creator:block", {
 	description = "Nodebox Creator",
-	tiles = {"nodebox_creator.png"},
+	tiles = {"nodebox_creator_node_top.png", "nodebox_creator_node_bottom.png", "nodebox_creator_node_side.png"},
 	groups = {cracky=3},
+	use_texture_alpha = true,
+	paramtype = "light",
+	drawtype = "nodebox",
+	node_box = {	-- nodebox created with nodebox_creator
+		type = "fixed",
+		fixed = {
+			{-7/16, -0.5, -0.5, 7/16, -7/16, 0.5},
+			{-0.5, -0.5, -7/16, 0.5, -7/16, 7/16},
+			{-7/16, -7/16, -7/16, 7/16, -5/16, 7/16},
+			{-3/8, -5/16, -3/8, 3/8, -1/4, 3/8},
+			{-5/16, -1/4, -5/16, 5/16, 1/4, 5/16},
+			{-3/8, 1/4, -3/8, 3/8, 5/16, 3/8},
+			{-7/16, 5/16, -3/8, 7/16, 7/16, 3/8},
+			{-3/8, 5/16, -7/16, 3/8, 7/16, 7/16},
+			{-0.5, 7/16, -0.5, 0.5, 0.5, 0.5},
+			{-0.5, 0, -0.5, -7/16, 7/16, -7/16},
+			{-0.5, -1/8, 7/16, -7/16, 7/16, 0.5},
+			{7/16, -3/16, -0.5, 0.5, 7/16, -7/16},
+			{7/16, 1/16, 7/16, 0.5, 7/16, 0.5}
+		},
+	},
 	on_construct = function(pos)
 		local meta = minetest.get_meta(pos)
 		meta:set_string("formspec", "size[5,8]"..
