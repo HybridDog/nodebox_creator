@@ -292,6 +292,19 @@ local function get_box_string(ps, pname)
 	return st
 end
 
+-- unnecessary extra
+local function play_sounds(boxes, pos)
+	local timer = 0
+	for _,i in pairs(boxes) do
+		for _,j in ipairs(i) do
+			minetest.after(timer, function(j, pos)
+				minetest.sound_play(math.abs(j), {pos=pos, gain=math.random()})
+			end, j, pos)
+			timer = timer+0.1
+		end
+	end
+end
+
 local last_punch = tonumber(os.clock())
 minetest.register_node("nodebox_creator:block", {
 	description = "Nodebox Creator",
@@ -395,6 +408,7 @@ minetest.register_node("nodebox_creator:block", {
 
 		pos.y = pos.y+1
 		update_boxes(pos, boxes)
+		play_sounds(boxes, pos)
 	end,
 })
 
