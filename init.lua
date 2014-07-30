@@ -1,21 +1,73 @@
+local tex = {[0] = "nodebox_creator_ff.png", "nodebox_creator_d6.png", "nodebox_creator_c2.png", "nodebox_creator_a3.png", "nodebox_creator_80.png"}
+--[[for i = 0,3 do
+	local str = "nodebox_creator_bottom.png"
+	for _ = i*i,8 do
+		str = str.."^nodebox_creator_overlay.png"
+	end
+	tex[i] = str
+end]]
+
+local time_delay = math.floor(3600/(tonumber(minetest.setting_get("time_speed")) or 72))
+
+local last_tab
+local function change_tex_tab(tab)
+	last_tab = tab
+	minetest.after(time_delay/2, function()
+		last_tab = nil
+	end)
+	return tab
+end
+
+local function get_textures()
+	if last_tab then
+		return last_tab
+	end
+	local dir = vector.sun_dir()
+	if not dir then
+		return change_tex_tab({tex[1], tex[4], tex[2], tex[2], tex[3], tex[3]})
+	end
+	local absx = math.abs(dir.x)
+	if dir.y > absx then
+		if absx < 0.4 then
+			return change_tex_tab({tex[0], tex[4], tex[2], tex[2], tex[3], tex[3]})
+		end
+		local tab = {tex[0], tex[4], tex[1], tex[4], tex[3], tex[3]}
+		if dir.x < 0 then 
+			tab[3], tab[4] = tab[4], tab[3]
+		end
+		return change_tex_tab(tab)
+	end
+	local tab = {tex[2], tex[4], tex[1], tex[4], tex[3], tex[3]}
+	if dir.x < 0 then 
+		tab[3], tab[4] = tab[4], tab[3]
+	end
+	return change_tex_tab(tab)
+end
+
 minetest.register_entity("nodebox_creator:entity",{
 	hp_max = 1,
 	visual="cube",
 	visual_size={x=1/16, y=1/16},
 	collisionbox = {0,0,0,0,0,0},
 	physical=false,
-	textures={"nodebox_creator_top.png", "nodebox_creator_bottom.png", "nodebox_creator_side1.png",
-		"nodebox_creator_side1.png", "nodebox_creator_side2.png", "nodebox_creator_side2.png"},
+	textures=tex,
 	timer = 0,
+	timerb = time_delay,
 	on_step = function(self, dtime)
 		self.timer = self.timer+dtime
-		if self.timer >= 2 then
+		if self.timer >= 5 then
 			self.timer = 0
 			local pos = vector.round(self.object:getpos())
 			pos.y = pos.y-1
 			if minetest.get_node(pos).name ~= "nodebox_creator:block" then
 				self.object:remove()
+				return
 			end
+		end
+		self.timerb = self.timerb+dtime
+		if self.timerb >= time_delay then
+			self.timerb = 0
+			self.object:set_properties({textures = get_textures()})
 		end
 	end
 })
