@@ -32,13 +32,13 @@ local function get_textures()
 			return change_tex_tab({tex[0], tex[4], tex[2], tex[2], tex[3], tex[3]})
 		end
 		local tab = {tex[0], tex[4], tex[1], tex[4], tex[3], tex[3]}
-		if dir.x < 0 then 
+		if dir.x < 0 then
 			tab[3], tab[4] = tab[4], tab[3]
 		end
 		return change_tex_tab(tab)
 	end
 	local tab = {tex[2], tex[4], tex[1], tex[4], tex[3], tex[3]}
-	if dir.x < 0 then 
+	if dir.x < 0 then
 		tab[3], tab[4] = tab[4], tab[3]
 	end
 	return change_tex_tab(tab)
@@ -265,7 +265,7 @@ local function update_boxes(pos, boxes)
 	for _,box in pairs(big_boxes) do
 		local xscale, yscale = box.a, box.b
 		local obj = minetest.add_entity(vector.add(pos, vector.divide(box, 16)), "nodebox_creator:entity")
-		obj:set_properties({visual_size={x=xscale/16, y=yscale/16}}) 
+		obj:set_properties({visual_size={x=xscale/16, y=yscale/16}})
 	end
 end
 
