@@ -7,7 +7,7 @@ local tex = {[0] = "nodebox_creator_ff.png", "nodebox_creator_d6.png", "nodebox_
 	tex[i] = str
 end]]
 
-local time_delay = math.floor(3600/(tonumber(minetest.setting_get("time_speed")) or 72))
+local time_delay = math.floor(3600/(tonumber(minetest.setting_get"time_speed") or 72))
 
 local last_tab
 local function change_tex_tab(tab)
@@ -24,12 +24,12 @@ local function get_textures()
 	end
 	local dir = vector.sun_dir()
 	if not dir then
-		return change_tex_tab({tex[1], tex[4], tex[2], tex[2], tex[3], tex[3]})
+		return change_tex_tab{tex[1], tex[4], tex[2], tex[2], tex[3], tex[3]}
 	end
 	local absx = math.abs(dir.x)
 	if dir.y > absx then
 		if absx < 0.4 then
-			return change_tex_tab({tex[0], tex[4], tex[2], tex[2], tex[3], tex[3]})
+			return change_tex_tab{tex[0], tex[4], tex[2], tex[2], tex[3], tex[3]}
 		end
 		local tab = {tex[0], tex[4], tex[1], tex[4], tex[3], tex[3]}
 		if dir.x < 0 then
@@ -67,7 +67,7 @@ minetest.register_entity("nodebox_creator:entity",{
 		self.timerb = self.timerb+dtime
 		if self.timerb >= time_delay then
 			self.timerb = 0
-			self.object:set_properties({textures = get_textures()})
+			self.object:set_properties{textures = get_textures()}
 		end
 	end
 })
@@ -265,7 +265,7 @@ local function update_boxes(pos, boxes)
 	for _,box in pairs(big_boxes) do
 		local xscale, yscale = box.a, box.b
 		local obj = minetest.add_entity(vector.add(pos, vector.divide(box, 16)), "nodebox_creator:entity")
-		obj:set_properties({visual_size={x=xscale/16, y=yscale/16}})
+		obj:set_properties{visual_size={x=xscale/16, y=yscale/16}}
 	end
 end
 
