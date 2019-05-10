@@ -7,7 +7,7 @@ local tex = {[0] = "nodebox_creator_ff.png", "nodebox_creator_d6.png", "nodebox_
 	tex[i] = str
 end]]
 
-local time_delay = math.floor(3600/(tonumber(minetest.setting_get"time_speed") or 72))
+local time_delay = math.floor(3600/(tonumber(minetest.settings:get"time_speed") or 72))
 
 local last_tab
 local function change_tex_tab(tab)
