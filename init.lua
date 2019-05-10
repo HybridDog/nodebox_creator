@@ -7,7 +7,7 @@ local tex = {[0] = "nodebox_creator_ff.png", "nodebox_creator_d6.png", "nodebox_
 	tex[i] = str
 end]]
 
-local time_delay = math.floor(3600/(tonumber(minetest.setting_get"time_speed") or 72))
+local time_delay = math.floor(3600/(tonumber(minetest.settings:get"time_speed") or 72))
 
 local last_tab
 local function change_tex_tab(tab)
@@ -57,7 +57,7 @@ minetest.register_entity("nodebox_creator:entity",{
 		self.timer = self.timer+dtime
 		if self.timer >= 5 then
 			self.timer = 0
-			local pos = vector.round(self.object:getpos())
+			local pos = vector.round(self.object:get_pos())
 			pos.y = pos.y-1
 			if minetest.get_node(pos).name ~= "nodebox_creator:block" then
 				self.object:remove()
