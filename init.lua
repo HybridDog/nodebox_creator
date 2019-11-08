@@ -94,30 +94,44 @@ local function remove_boxes(pos)
 	end
 end
 
+-- This helper function is to index a 3D cartesian grid
+local function hash_position(x, y, z)
+	return minetest.hash_node_position{x=x, y=y, z=z}
+end
+
 -- removes a box from tab
-local function take_box(tab, box)
+local function take_box(grid, box)
 	local z1, y1, x1, z2, y2, x2 = unpack(box)
 	z1 = math.ceil(z1)
 	y1 = math.ceil(y1)
 	x1 = math.ceil(x1)
 	for z = z1, z2-1 do
 		for y = y1, y2-1 do
+			local vi = hash_position(x1, y, z)
 			for x = x1, x2-1 do
-				tab[z.." "..y.." "..x] = false
+				grid[vi] = false
+				vi = vi+1
 			end
 		end
 	end
-	return tab
 end
 
 -- checks if a box is needed to be added
-local function box_visible(tab, x1, y1, z1, x2, y2, z2)
+local function box_visible(grid, x1, y1, z1, x2, y2, z2)
+	-- Coarse test first
+	if grid[hash_position(x1, y1, z1)]
+	or grid[hash_position(x2, y2, z2)] then
+		return true
+	end
+	-- Test every grid position
 	for i = z1, z2-1 do
 		for j = y1, y2-1 do
+			local vi = hash_position(x1, j, i)
 			for k = x1, x2-1 do
-				if tab[i.." "..j.." "..k] then
+				if grid[vi] then
 					return true
 				end
+				vi = vi+1
 			end
 		end
 	end
@@ -126,19 +140,21 @@ end
 
 -- returns the tables needed for showing nodeboxes with entities
 local function get_fine_boxes(boxes)
-	local tab = {}	-- fills a table of coordinates
+	local grid = {}	-- fills a table of coordinates
 	for _,i in pairs(boxes) do
 		for z = i[3], i[6]-1 do
 			for y = i[2], i[5]-1 do
+				local vi = hash_position(i[1], y, z)
 				for x = i[1], i[4]-1 do
-					tab[z.." "..y.." "..x] = true
+					grid[vi] = true
+					vi = vi+1
 				end
 			end
 		end
 	end
-	local old_tab = {}	-- copy this table of coordinates
-	for i,_ in pairs(tab) do
-		old_tab[i] = true
+	local old_grid = {}	-- copy this table of coordinates
+	for i in pairs(grid) do
+		old_grid[i] = true
 	end
 	local big_entities,n = {},1
 	for _,box in pairs(boxes) do	-- checks if single big entities can be used
@@ -149,7 +165,7 @@ local function get_fine_boxes(boxes)
 		local xscale = x2-x1
 		local zscale = z2-z1
 		if xscale == zscale then
-			tab = take_box(tab, box)
+			take_box(grid, box)
 			local px = x1+xscale/2
 			local pz = z1+xscale/2
 			big_entities[n] = {x=px, y=py, z=pz, a=xscale, b=yscale}
@@ -169,9 +185,9 @@ local function get_fine_boxes(boxes)
 			if minscale == zscale then
 				local pz = z1+minscale/2
 				for x = x1, x2-minscale, minscale do
-					if box_visible(tab, x, y1, z1, x+minscale, y2, z2) then
+					if box_visible(grid, x, y1, z1, x+minscale, y2, z2) then
 						local cbox = {z1, y1, x, z2, y2, x+minscale}
-						tab = take_box(tab, cbox)
+						take_box(grid, cbox)
 						local px = x+minscale/2
 						big_entities[n] = {x=px, y=py, z=pz, a=minscale, b=yscale}
 						n = n+1
@@ -180,9 +196,9 @@ local function get_fine_boxes(boxes)
 			else
 				local px = x1+minscale/2
 				for z = z1, z2-minscale, minscale do
-					if box_visible(tab, x1, y1, z, x2, y2, z+minscale) then
+					if box_visible(grid, x1, y1, z, x2, y2, z+minscale) then
 						local cbox = {z, y1, x1, z+minscale, y2, x2}
-						tab = take_box(tab, cbox)
+						take_box(grid, cbox)
 						local pz = z+minscale/2
 						big_entities[n] = {x=px, y=py, z=pz, a=minscale, b=yscale}
 						n = n+1
@@ -195,7 +211,7 @@ local function get_fine_boxes(boxes)
 		for x = -8,8 do
 			local p1, lastp
 			for y = -8,9 do
-				if tab[z.." "..y.." "..x] then
+				if grid[hash_position(x, y, z)] then
 					if not p1 then
 						p1 = y
 						lastp = y
@@ -206,7 +222,7 @@ local function get_fine_boxes(boxes)
 				else
 					if p1
 					and lastp ~= p1 then
-						tab = take_box(tab, {z, p1, x, z+1, y, x+1})
+						take_box(grid, {z, p1, x, z+1, y, x+1})
 						local dist = y-p1
 						big_entities[n] = {x=x+0.5, y=p1+dist/2, z=z+0.5, a=1, b=dist}
 						n = n+1
@@ -216,7 +232,7 @@ local function get_fine_boxes(boxes)
 			end
 		end
 	end
-	return tab, big_entities, old_tab
+	return grid, big_entities, old_grid
 end
 
 -- changes nodebox creator text to nodebox tables
