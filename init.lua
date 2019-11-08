@@ -1,49 +1,60 @@
-local tex = {[0] = "nodebox_creator_ff.png", "nodebox_creator_d6.png", "nodebox_creator_c2.png", "nodebox_creator_a3.png", "nodebox_creator_80.png"}
---[[for i = 0,3 do
-	local str = "nodebox_creator_bottom.png"
-	for _ = i*i,8 do
-		str = str.."^nodebox_creator_overlay.png"
-	end
-	tex[i] = str
-end]]
 
 local time_speed = tonumber(minetest.settings:get"time_speed") or 72
 -- At least one update each hour in minetest time
 local light_update_delay = math.min(math.floor(3600.0 / time_speed), 5.0)
 
-local last_tab
+-- Remember the previous lighting until some time elapsed
+local previous_textures
 local function change_tex_tab(tab)
-	last_tab = tab
+	previous_textures = tab
 	minetest.after(light_update_delay * 0.5, function()
-		last_tab = nil
+		previous_textures = nil
 	end)
 	return tab
 end
 
+local tiles_normals = {
+	{x=0, y=1, z=0},
+	{x=0, y=-1, z=0},
+	{x=1, y=0, z=0},
+	{x=-1, y=0, z=0},
+	{x=0, y=0, z=1},
+	{x=0, y=0, z=-1},
+}
+local ambient_lights = {0.4, 0.1, 0.2, 0.2, 0.3, 0.3}
 local function get_textures()
-	if last_tab then
-		return last_tab
+	if previous_textures then
+		-- get_textures may be called for lots of cuboids
+		return previous_textures
 	end
-	local dir = vector.sun_dir()
-	if not dir then
-		return change_tex_tab{tex[1], tex[4], tex[2], tex[2], tex[3], tex[3]}
-	end
-	local absx = math.abs(dir.x)
-	if dir.y > absx then
-		if absx < 0.4 then
-			return change_tex_tab{tex[0], tex[4], tex[2], tex[2], tex[3], tex[3]}
+	-- Calculate diffuse lights
+	local diffuse_lights = {}
+	local sun_dir = vector.sun_dir()
+	if sun_dir then
+		for i = 1,#tiles_normals do
+			local normal = tiles_normals[i]
+			diffuse_lights[i] = math.max(vector.dot(normal, sun_dir), 0.0)
 		end
-		local tab = {tex[0], tex[4], tex[1], tex[4], tex[3], tex[3]}
-		if dir.x < 0 then
-			tab[3], tab[4] = tab[4], tab[3]
+	else
+		-- It is night now, moonlight is not (yet) supported
+		-- Set the final light to ambient light scaled to [0, 1]
+		local ambient_light_max = ambient_lights[1]
+		local f = 1.0 / ambient_light_max - 1.0
+		for i = 1,#ambient_lights do
+			diffuse_lights[i] = ambient_lights[i] * f
 		end
-		return change_tex_tab(tab)
 	end
-	local tab = {tex[2], tex[4], tex[1], tex[4], tex[3], tex[3]}
-	if dir.x < 0 then
-		tab[3], tab[4] = tab[4], tab[3]
+	-- Create texture strings
+	local textures = {}
+	for i = 1,#ambient_lights do
+		local light_strength = ambient_lights[i] + diffuse_lights[i]
+		local srgb_gray = math.floor(light_strength ^ (1.0 / 2.2) * 255.0 + 0.5)
+		srgb_gray = math.min(srgb_gray, 255)
+		textures[i] = string.format(
+			"nodebox_creator_ff.png^[colorize:#%02x%02x%02x",
+			srgb_gray, srgb_gray, srgb_gray)
 	end
-	return change_tex_tab(tab)
+	return change_tex_tab(textures)
 end
 
 minetest.register_entity("nodebox_creator:entity",{
