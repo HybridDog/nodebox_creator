@@ -7,12 +7,14 @@ local tex = {[0] = "nodebox_creator_ff.png", "nodebox_creator_d6.png", "nodebox_
 	tex[i] = str
 end]]
 
-local time_delay = math.floor(3600/(tonumber(minetest.settings:get"time_speed") or 72))
+local time_speed = tonumber(minetest.settings:get"time_speed") or 72
+-- At least one update each hour in minetest time
+local light_update_delay = math.min(math.floor(3600.0 / time_speed), 5.0)
 
 local last_tab
 local function change_tex_tab(tab)
 	last_tab = tab
-	minetest.after(time_delay/2, function()
+	minetest.after(light_update_delay * 0.5, function()
 		last_tab = nil
 	end)
 	return tab
@@ -52,7 +54,7 @@ minetest.register_entity("nodebox_creator:entity",{
 	physical=false,
 	textures=tex,
 	timer = 0,
-	timerb = time_delay,
+	timerb = light_update_delay,
 	on_step = function(self, dtime)
 		self.timer = self.timer+dtime
 		if self.timer >= 5 then
@@ -65,7 +67,7 @@ minetest.register_entity("nodebox_creator:entity",{
 			end
 		end
 		self.timerb = self.timerb+dtime
-		if self.timerb >= time_delay then
+		if self.timerb >= light_update_delay then
 			self.timerb = 0
 			self.object:set_properties{textures = get_textures()}
 		end
@@ -428,18 +430,20 @@ minetest.register_node("nodebox_creator:block", {
 			for n,j in pairs(string.split(i, " ")) do
 				local coord = tonumber(j)
 				if not coord then
-					minetest.chat_send_player(pname, n.." ?")
+					minetest.chat_send_player(pname,
+						"Could not convert \"" .. n .. "\" to a number.")
 					return
 				end
 				if math.abs(coord) > 8 then
-					minetest.chat_send_player(pname, "|coordinate| needs to be <= 8")
+					minetest.chat_send_player(pname,
+						"Each coordinate has to be within [-8, 8].")
 					return
 				end
 				tab[n] = j
 			end
-			local amount = #tab
-			if amount ~= 6 then
-				minetest.chat_send_player(pname, "6 coordinates, not "..amount)
+			if #tab ~= 6 then
+				minetest.chat_send_player(pname,
+					#tab .. " coordinates were passed, but 6 are needed.")
 				return
 			end
 			table.insert(boxes, tab)
