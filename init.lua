@@ -62,8 +62,7 @@ minetest.register_entity("nodebox_creator:entity",{
 	visual="cube",
 	visual_size={x=1/16, y=1/16},
 	collisionbox = {0,0,0,0,0,0},
-	physical=false,
-	textures=tex,
+	physical = false,
 	timer = 0,
 	timerb = light_update_delay,
 	on_step = function(self, dtime)
@@ -391,7 +390,7 @@ minetest.register_node("nodebox_creator:block", {
 	description = "Nodebox Creator",
 	tiles = {"nodebox_creator_node_top.png", "nodebox_creator_node_bottom.png", "nodebox_creator_node_side.png"},
 	groups = {cracky=3},
-	use_texture_alpha = true,
+	use_texture_alpha = minetest.features.use_texture_alpha_string_modes and "blend" or true,
 	paramtype = "light",
 	drawtype = "nodebox",
 	node_box = {	-- nodebox created with nodebox_creator
