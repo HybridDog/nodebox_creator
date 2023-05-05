@@ -239,8 +239,7 @@ local function get_positions(tab)
 	local tab2,n = {},1
 	for i,b in pairs(tab) do
 		if b then
-			local coords = string.split(i, " ")
-			local p = {x=coords[3], y=coords[2], z=coords[1]}
+			local p = minetest.get_position_from_hash(i)
 			tab2[n] = vector.divide(vector.add(p, 0.5), 16)
 			n = n+1
 		end
